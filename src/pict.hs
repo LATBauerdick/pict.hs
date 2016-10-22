@@ -79,12 +79,6 @@ doCopy source subPath target = do
   createDirectoryIfMissing True target
   mapM_ (copyItem source target) js
 
-
-getItems :: FilePath -> FilePath -> IO [FilePath]
-getItems source subPath = do
-  items <- foldDirTree onlyJpegs [] source subPath
-  return items
-
 copyItem :: FilePath -> FilePath -> FilePath -> IO ()
 copyItem baseSourcePath baseTargetPath relativePath = do
   let sourcePath = baseSourcePath </> relativePath
@@ -99,6 +93,12 @@ copyItem baseSourcePath baseTargetPath relativePath = do
              copyFileWithMetadata sourcePath targetPath `debug` msg
      else putStr "x" `debug` "target file exist, NOT overwriting"
 
+
+getItems :: FilePath -> FilePath -> IO [FilePath]
+getItems source subPath = do
+  items <- foldDirTree onlyJpegs [] source subPath
+  return items
+
 onlyJpegs :: Iterator [FilePath]
 onlyJpegs paths info
     | length paths == Pict.maxItems
@@ -112,8 +112,6 @@ onlyJpegs paths info
   where extension = map toLower (takeExtension path)
         path = infoPath info
 
-
-
 countJpegs :: Iterator Int
 countJpegs count info =
     Continue (if (extension `elem` [".jpg", ".jpeg"])
@@ -121,45 +119,18 @@ countJpegs count info =
               else count)
     where extension = map toLower (takeExtension (infoPath info))
 
-
 countDirectories :: Iterator Int
 countDirectories count info =
     Continue (if isDirectory info
               then count + 1
               else count)
 
-
-
 data Info = Info {
-      infoPath :: FilePath
-    , infoPerms :: Maybe Permissions
-    , infoSize :: Maybe Integer
-    , infoModTime :: Maybe UTCTime
+      infoPath      :: FilePath
+    , infoPerms     :: Maybe Permissions
+    , infoSize      :: Maybe Integer
+    , infoModTime   :: Maybe UTCTime
     } deriving (Eq, Ord, Show)
-
-maybeIO :: IO a -> IO (Maybe a)
-maybeIO act = catch (Just `liftM` act)
-                    (\e -> do
-                      let err = e :: SomeException
-                      return Nothing)
-
-getInfo :: FilePath -> FilePath -> IO Info
-getInfo path name = do
-  let path' = path </> name
-  perms <- maybeIO (getPermissions path')
---  size <- maybeIO (bracket (openFile path' ReadMode) hClose hFileSize)
---  modified <- maybeIO (getModificationTime path')
-  return (Info name perms Nothing Nothing)
-
-isDirectory :: Info -> Bool
-isDirectory = maybe False searchable . infoPerms
-
-getUsefulContents :: FilePath -> FilePath -> IO [String]
-getUsefulContents hd p = do
-  let path = hd </> p
-  names <- getDirectoryContents path
-  return (filter (`notElem` [".", ".."]) names)
-
 
 data Iterate seed = Done     { unwrap :: seed }
                   | Skip     { unwrap :: seed }
@@ -191,107 +162,26 @@ foldDirTree iter initSeed head path = do
           | otherwise -> walk head path seed' names
     walk _ _ seed _ = return (Continue seed)
 
+maybeIO :: IO a -> IO (Maybe a)
+maybeIO act = catch (Just `liftM` act)
+                    (\e -> do
+                      let err = e :: SomeException
+                      return Nothing)
 
---     |> Enum.map(fn {s, subt} -> {
---         (Path.absname(subt, s) |> Path.expand),
---         (Path.absname(subt, "/mnt/P/O/JPEGs/") |> Path.expand)
---                                 } end)
---     |> IO.inspect
---     |> Enum.each(fn {sp, tp} ->
---                     {time, _result} = :timer.tc(
---                           &Pictures.Process.run/3, [sp, tp, cmd_copy()]
---         )
---         :io.format "processing took ~.2f seconds~n", [time/1_000_000.0]
---                   end)
+getInfo :: FilePath -> FilePath -> IO Info
+getInfo path name = do
+  let path' = path </> name
+  perms <- maybeIO (getPermissions path')
+--  size <- maybeIO (bracket (openFile path' ReadMode) hClose hFileSize)
+--  modified <- maybeIO (getModificationTime path')
+  return (Info name perms Nothing Nothing)
 
+isDirectory :: Info -> Bool
+isDirectory = maybe False searchable . infoPerms
 
--- #                  @source "/mnt/P/O/P2016/"
--- #                  @subtree "2016" # allow to restrict to sub tree
--- #                  @target "/mnt/P/O/JPEGs/"
--- #    sp = Path.absname(@subtree, @source) |> Path.expand
--- #    tp = Path.absname(@subtree, @target) |> Path.expand
--- #    {time, _result} = :timer.tc(
--- #      &Pictures.Process.run/3, [sp, tp, cmd]
--- #      )
--- #      :io.format "processing took ~.2f seconds~n", [time/1_000_000.0]
---   end
---   def sjpegs do
---     cmd = fn source, target -> [  "convert",
---                                   source,
---                                   "-resize", "2560x2048",
---                                   "-quality" , "50",
---                                   target
---                                 ] end
+getUsefulContents :: FilePath -> FilePath -> IO [String]
+getUsefulContents hd p = do
+  let path = hd </> p
+  names <- getDirectoryContents path
+  return (filter (`notElem` [".", ".."]) names)
 
---     2016..2016
---     |> Enum.map(fn x -> { "/mnt/P/O/P#{x}/", "#{x}/#{x}-09" } end) # only 2016-09
---     |> Enum.map(fn {s, subt} -> { (Path.absname(subt, s) |> Path.expand),
---                                   (Path.absname(subt, "~/Dropbox/Pictures/sJPEGs/") |> Path.expand) }
---                           end)
---                           |> IO.inspect
---     |> Enum.each(fn {sp, tp} ->
---       {time, _result} = :timer.tc(
---         &Pictures.Process.run/3, [sp, tp, cmd]
---         )
---         :io.format "processing took ~.2f seconds~n", [time/1_000_000.0]
---                   end)
---   end
-
---   def run(source, target, cmd) do
--- #
--- # recursively process any .JPG file in the source tree
--- # using command structure [cmd, args, ...]
--- # e.g. use [convert s -resize 100x100 t] to create
--- #    a smaller JPG in the target tree
--- # -- creating directories as required
--- # -- not overwriting exiting files
--- #
---     [source | dtree(source)]
---     |> Enum.map(fn p -> a=Path.relative_to(p, source);
---                   cond do
---                     a == p -> {source, target}
---                     true -> {Path.absname(a, source), Path.absname(a, target)}
---                   end
---                 end)
---     |> Enum.each(fn {s, t} -> IO.puts "#{s} -> #{t}"
---                   File.mkdir_p(t)
---                   do_process s, t, cmd
---                  end)
---   end
-
---   @max_parallel 16
---   defp do_process(s, t, cmd) do
---     Path.wildcard(Path.absname("*.{JPG,jpg}",s))
---     |> Enum.map(&Path.basename/1)
---     |> Enum.filter(fn path -> not File.exists?(Path.absname(path,t)) end)
---     |> Enum.map(fn x -> cmd.(Path.absname(x,s),Path.absname(x,t)) end)
---     |> Enum.chunk(@max_parallel, @max_parallel, [])
---     |> Enum.each(fn c -> do_exec(c) end)
---   end
---   defp do_exec(chunk) do
--- # exec cmd in chunks of max_parallel
---     chunk
---     |> Enum.map(fn x -> Task.async(fn -> do_sys(x) end) end)
---     |> Enum.map(fn t -> Task.await(t, 120_000) end)
---   end
-
---   defp do_sys([cmd | args]) do
--- #    System.cmd(cmd, args, into: IO.stream(:stdio, :line))
---     {time, result} = :timer.tc(
---         System, :cmd, ["nice", [cmd | args]]
---       )
---     {_output, status} = result
---     :io.format "processing #{cmd} #{Path.basename(hd(args))}, status ~2B, took ~.2f sec~n",
---                 [status, time/1_000_000.0]
---     result
---   end
-
---   defp dtree(dir) do
---     cond do
---       not File.dir?(dir) -> []
---       true -> File.ls!(dir)
---           |> Enum.filter(fn name -> File.dir?("#{dir}/#{name}") end)
---           |> Enum.map(fn name -> ["#{dir}/#{name}" | dtree("#{dir}/#{name}")] end)
---           |> List.flatten()
---     end
---   end
