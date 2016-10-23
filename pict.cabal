@@ -29,6 +29,7 @@ executable pict
                      , filepath
                      , time
                      , process
+                     , parallel
   default-language:    Haskell2010
 
 test-suite pict-test

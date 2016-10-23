@@ -15,6 +15,8 @@ import Control.Exception (bracket, catch, SomeException)
 import System.IO (IOMode(..), hClose, hFileSize, openFile)
 import System.Process (rawSystem)
 import Control.Monad
+import Control.Concurrent (forkIO)
+import Data.Maybe (isJust)
 import Debug.Trace ( trace )
 debug = flip trace
 
@@ -39,65 +41,63 @@ processJpegs yr mo sJpegs = do
       jpegsPath   = "/Users/bauerdic/Media/JPEGs" -- printf "/mnt/P/O/P%d/" (yr::Int)
       source = if sJpegs
                   then sJpegsPath
-                  else jpegsPath
+                  else sJpegsPath -- jpegsPath
       target = "/Users/bauerdic/neu"
+      act :: FilePath -> IO (Maybe FilePath)
+      act = if sJpegs
+              then doItem source target copyIt
+              else doItem source target convertIt
   putStrLn $ "copy from " ++ source ++ ">>>" ++ subPath
-  if sJpegs
-     then doCopy source subPath target
-     else doConvert source subPath target
-
-doConvert :: FilePath -> FilePath -> FilePath -> IO ()
-doConvert source subPath target = do
   js <- getItems source subPath
-  cnt <- foldDirTree countJpegs 0 source subPath
-  putStrLn (printf "Processing %d items." cnt)
-
+  putStrLn (printf "Processing %d items." (length js))
   createDirectoryIfMissing True target
-  mapM_ (convertItem source target) js
-
-convertItem :: FilePath -> FilePath -> FilePath -> IO ()
-convertItem baseSourcePath baseTargetPath relativePath = do
-  let sourcePath = baseSourcePath </> relativePath
-      targetPath = baseTargetPath </> relativePath
-      cmd:args = cmd_conv sourcePath  targetPath
-      msg = "Converting " ++ (takeFileName relativePath)
-        ++ " to " ++ (takeDirectory targetPath)
-  createDirectoryIfMissing True $ takeDirectory targetPath
-  fex <- doesFileExist targetPath
-  if (not fex)
-     then do putStr "."
-             rawSystem cmd args `debug` msg
-             return () -- for the moment, ignore any error !!!????
-     else putStr "x" `debug` "target file exist, NOT overwriting"
-
-doCopy :: FilePath -> FilePath -> FilePath -> IO ()
-doCopy source subPath target = do
-  js <- getItems source subPath
-  cnt <- foldDirTree countJpegs 0 source subPath
-  putStrLn (printf "Processing %d items." cnt)
-
-  createDirectoryIfMissing True target
-  mapM_ (copyItem source target) js
-
-copyItem :: FilePath -> FilePath -> FilePath -> IO ()
-copyItem baseSourcePath baseTargetPath relativePath = do
-  let sourcePath = baseSourcePath </> relativePath
-  let targetPath = baseTargetPath </> relativePath
-
-  let msg = "Copying " ++ (takeFileName relativePath)
-        ++ " to " ++ (takeDirectory targetPath)
-  createDirectoryIfMissing True $ takeDirectory targetPath
-  fex <- doesFileExist targetPath
-  if (not fex)
-     then do putStr "."
-             copyFileWithMetadata sourcePath targetPath `debug` msg
-     else putStr "x" `debug` "target file exist, NOT overwriting"
-
+  copied <- doAction js act
+  putStr "processed items:"
+  print $ length $ filter isJust copied
 
 getItems :: FilePath -> FilePath -> IO [FilePath]
 getItems source subPath = do
   items <- foldDirTree onlyJpegs [] source subPath
   return items
+
+convertIt :: FilePath -> FilePath -> IO ()
+convertIt sourcePath targetPath =  do
+       let cmd:args = cmd_conv sourcePath  targetPath
+       rawSystem cmd args
+       return () -- for the moment, ignore any error !!!????
+
+copyIt :: FilePath -> FilePath -> IO ()
+copyIt sourcePath targetPath = copyFileWithMetadata sourcePath targetPath
+
+doAction :: [FilePath] -> (FilePath -> IO (Maybe FilePath))
+         -> IO [Maybe FilePath]
+doAction js act = do
+  let iamfs = (ioMap act js) >>= \s -> return $ s
+
+      -- m >>= \s -> return (length s)
+  amfs <- iamfs
+  return amfs
+
+ioMap ::(FilePath -> IO (Maybe FilePath)) -> [FilePath] -> IO [Maybe FilePath]
+ioMap _ [] = return []
+ioMap f (a:aas) = do
+  b <- f a
+  bs <- ioMap f aas
+  return (b:bs)
+
+doItem :: FilePath -> FilePath -> (FilePath -> FilePath -> IO()) -> FilePath -> IO (Maybe FilePath)
+doItem baseSourcePath baseTargetPath doIt relativePath = do
+  let s = baseSourcePath </> relativePath
+      t = baseTargetPath </> relativePath
+      msg = "Processing " ++ (takeFileName relativePath)
+        ++ " to " ++ (takeDirectory t)
+  createDirectoryIfMissing True $ takeDirectory t
+  mf <- liftM (\x -> if (x) then Nothing else (Just t)) (doesFileExist t)
+  if (isJust mf)
+    then do putStr "."
+            doIt s t `debug` msg --
+    else putStr "x" -- `debug` "target file exist, NOT overwriting"
+  return mf
 
 onlyJpegs :: Iterator [FilePath]
 onlyJpegs paths info
