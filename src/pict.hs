@@ -28,7 +28,7 @@ paths = map (\ x -> ( printf "/mnt/P/O/P%d/" (x::Int),
                         printf "%d/%d-10" (x::Int) (x::Int) )) [2010..2016]
 
 -- change this to process more files !!!!!!!!!!
-maxItems = 42 -- for predicat function foldDirTree onlyJpegs below
+maxItems = 99999 -- for predicat function foldDirTree onlyJpegs below
 
 processJpegs :: Int -> Int -> Bool -> IO ()
 processJpegs yr mo sJpegs = do
@@ -36,7 +36,7 @@ processJpegs yr mo sJpegs = do
                   then printf "%d/%d-%02d" (yr::Int) (yr::Int) (mo::Int)
                   else printf "%d" (yr::Int)
       sJpegsPath  = "/Users/bauerdic/Dropbox/Pictures/sJPEGs/"
-      jpegsPath = sJpegsPath -- printf "/mnt/P/O/P%d/" (yr::Int)
+      jpegsPath   = "/Users/bauerdic/Media/JPEGs" -- printf "/mnt/P/O/P%d/" (yr::Int)
       source = if sJpegs
                   then sJpegsPath
                   else jpegsPath

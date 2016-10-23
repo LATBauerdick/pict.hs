@@ -26,7 +26,7 @@ process args =
     "-c":rest -> do
       putStrLn "will convert to small jpegs"
       print rest
-      Pict.processJpegs 2016 9 False
+      Pict.processJpegs 2016 10 False
     [syr] -> do
       print syr
       let yr = 2016
