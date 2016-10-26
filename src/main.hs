@@ -5,36 +5,33 @@ import System.Exit
 import Pict ( processJpegs )
 
 main :: IO ()
-main = getArgs >>= parse >>= process
+main = getArgs >>= parse >>= process True
 
 parse ["-h"] = usage >> exit
 parse ["-v"] = version >> exit
-parse [] = return ["-s", "2016", "9"] :: IO [String] -- default
+parse [] = return ["-s"] :: IO [String] -- default
 parse x = return x :: IO [String]
 
-usage = putStrLn "Usage: pict <whatever>"
+usage = putStrLn "Usage: pict [-s | -c] [year] [month]"
 version = putStrLn "Haskell pict v. 0.1"
 exit = exitWith ExitSuccess
 
-process :: [String] -> IO ()
-process args =
+process :: Bool -> [String] -> IO ()
+process conv args =
   case args of
+    [] -> do
+      Pict.processJpegs 2016 10 conv
     "-s":rest -> do
       putStrLn "will copy from small jpegs for range"
-      print rest
-      Pict.processJpegs 2016 0 True
+      process False rest
     "-c":rest -> do
       putStrLn "will convert to small jpegs"
-      print rest
-      Pict.processJpegs 2016 10 False
+      process True rest
     [syr] -> do
-      print syr
-      let yr = 2016
-      Pict.processJpegs yr 0 True
+      let yr = read syr
+      Pict.processJpegs yr 0 conv
     [syr, smo] -> do
-      print syr
-      print smo
-      let yr = 2016
-      let mo = 9
-      Pict.processJpegs yr mo True
+      let yr = read syr
+      let mo = read smo
+      Pict.processJpegs yr mo conv
 

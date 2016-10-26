@@ -21,33 +21,25 @@ import Data.Maybe (isJust)
 import Debug.Trace ( trace )
 debug = flip trace
 
-cmd_echo :: String -> String -> [String]
-cmd_echo source target = [ "echo", "copy", source, target]
-cmd_conv :: String -> String -> [String]
-cmd_conv source target = [ "convert", source, "-resize", "2560x2048",
-                                    "-quality" , "50", target]
-paths :: [(String, String)]
-paths = map (\ x -> ( printf "/mnt/P/O/P%d/" (x::Int),
-                        printf "%d/%d-10" (x::Int) (x::Int) )) [2010..2016]
-
 -- change this to process more files !!!!!!!!!!
 maxItems = 99999 -- for predicat function foldDirTree onlyJpegs below
 
 processJpegs :: Int -> Int -> Bool -> IO ()
-processJpegs yr mo sJpegs = do
+processJpegs yr mo conv = do
   let subPath = if mo > 0
                   then printf "%d/%d-%02d" (yr::Int) (yr::Int) (mo::Int)
                   else printf "%d" (yr::Int)
       sJpegsPath  = "/Users/bauerdic/Dropbox/Pictures/sJPEGs/"
-      jpegsPath   = "/Users/bauerdic/Media/JPEGs" -- printf "/mnt/P/O/P%d/" (yr::Int)
-      source = if sJpegs
-                  then sJpegsPath
-                  else sJpegsPath -- jpegsPath
+      jpegsPath   = "/Users/bauerdic/Media/JPEGs"
+      --jpegsPath   = printf "/mnt/P/O/P%d/" (yr::Int)
+      source = if conv
+                  then sJpegsPath -- jpegsPath
+                  else sJpegsPath
       target = "/Users/bauerdic/neu"
       actOn :: FilePath -> IO (Maybe FilePath)
-      actOn = if sJpegs
-                then doItem source target copyIt
-                else doItem source target convertIt
+      actOn = if conv
+                then doItem source target convertIt
+                else doItem source target copyIt
   putStrLn $ "copy from " ++ source ++ ">>>" ++ subPath
   js <- getItems source subPath
   putStrLn (printf "Processing %d items." (length js))
@@ -63,9 +55,12 @@ getItems source subPath = do
 
 convertIt :: FilePath -> FilePath -> IO ()
 convertIt sourcePath targetPath =  do
-       let cmd:args = cmd_conv sourcePath  targetPath
-       rawSystem cmd args
-       return () -- for the moment, ignore any error !!!????
+  let cmd_conv = [  "convert", sourcePath
+                  , "-resize", "2560x2048", "-quality" , "50"
+                  , targetPath ]
+      cmd:args = cmd_conv
+  rawSystem cmd args
+  return () -- for the moment, ignore any error !!!????
 
 copyIt :: FilePath -> FilePath -> IO ()
 copyIt sourcePath targetPath = copyFileWithMetadata sourcePath targetPath
@@ -73,16 +68,8 @@ copyIt sourcePath targetPath = copyFileWithMetadata sourcePath targetPath
 --doAction :: (FilePath -> IO (Maybe FilePath)) -> [FilePath] -> IO [Maybe FilePath]
 doAction :: (a -> IO b) -> [a] -> IO [b]
 doAction actOn js = do
-  -- let iamfs :: IO [Maybe FilePath]
-  --     iamfs = (ioMap actOn js)
-  --    -- len = m >>= \s -> return (length s)
-  -- amfs <- iamfs
-  let
---      aimfs :: [IO (Maybe FilePath)]
-      aimfs = map actOn js `using` parList rseq
---      iamfs :: IO [Maybe FilePath]
-      iamfs = insideoutIO aimfs
-  amfs <- iamfs
+  let doParallel f xs = map f xs `using` parList rseq
+  amfs <- insideoutIO $ doParallel actOn js
   return amfs
 insideoutIO :: [IO a] -> IO [a]
 insideoutIO [] = do return []
@@ -91,13 +78,6 @@ insideoutIO (x:xs) = do
   xs' <- insideoutIO xs
   return (x':xs')
 
-
-ioMap :: (FilePath -> IO (Maybe FilePath)) -> [FilePath] -> IO [Maybe FilePath]
-ioMap _ [] = return []
-ioMap f (a:aas) = do
-  b <- f a
-  bs <- ioMap f aas
-  return (b:bs)
 
 doItem :: FilePath -> FilePath -> (FilePath -> FilePath -> IO()) -> FilePath -> IO (Maybe FilePath)
 doItem baseSourcePath baseTargetPath doIt relativePath = do
