@@ -15,7 +15,8 @@ import Control.Exception (bracket, catch, SomeException)
 import System.IO (IOMode(..), hClose, hFileSize, openFile)
 import System.Process (rawSystem)
 import Control.Monad
-import Control.Concurrent (forkIO)
+import Control.Parallel.Strategies
+-- import Control.Concurrent (forkIO)
 import Data.Maybe (isJust)
 import Debug.Trace ( trace )
 debug = flip trace
@@ -43,15 +44,15 @@ processJpegs yr mo sJpegs = do
                   then sJpegsPath
                   else sJpegsPath -- jpegsPath
       target = "/Users/bauerdic/neu"
-      act :: FilePath -> IO (Maybe FilePath)
-      act = if sJpegs
-              then doItem source target copyIt
-              else doItem source target convertIt
+      actOn :: FilePath -> IO (Maybe FilePath)
+      actOn = if sJpegs
+                then doItem source target copyIt
+                else doItem source target convertIt
   putStrLn $ "copy from " ++ source ++ ">>>" ++ subPath
   js <- getItems source subPath
   putStrLn (printf "Processing %d items." (length js))
   createDirectoryIfMissing True target
-  copied <- doAction js act
+  copied <- doAction actOn js
   putStr "processed items:"
   print $ length $ filter isJust copied
 
@@ -69,16 +70,29 @@ convertIt sourcePath targetPath =  do
 copyIt :: FilePath -> FilePath -> IO ()
 copyIt sourcePath targetPath = copyFileWithMetadata sourcePath targetPath
 
-doAction :: [FilePath] -> (FilePath -> IO (Maybe FilePath))
-         -> IO [Maybe FilePath]
-doAction js act = do
-  let iamfs = (ioMap act js) >>= \s -> return $ s
-
-      -- m >>= \s -> return (length s)
+--doAction :: (FilePath -> IO (Maybe FilePath)) -> [FilePath] -> IO [Maybe FilePath]
+doAction :: (a -> IO b) -> [a] -> IO [b]
+doAction actOn js = do
+  -- let iamfs :: IO [Maybe FilePath]
+  --     iamfs = (ioMap actOn js)
+  --    -- len = m >>= \s -> return (length s)
+  -- amfs <- iamfs
+  let
+--      aimfs :: [IO (Maybe FilePath)]
+      aimfs = map actOn js `using` parList rseq
+--      iamfs :: IO [Maybe FilePath]
+      iamfs = insideoutIO aimfs
   amfs <- iamfs
   return amfs
+insideoutIO :: [IO a] -> IO [a]
+insideoutIO [] = do return []
+insideoutIO (x:xs) = do
+  x' <- x
+  xs' <- insideoutIO xs
+  return (x':xs')
 
-ioMap ::(FilePath -> IO (Maybe FilePath)) -> [FilePath] -> IO [Maybe FilePath]
+
+ioMap :: (FilePath -> IO (Maybe FilePath)) -> [FilePath] -> IO [Maybe FilePath]
 ioMap _ [] = return []
 ioMap f (a:aas) = do
   b <- f a
@@ -163,10 +177,10 @@ foldDirTree iter initSeed head path = do
     walk _ _ seed _ = return (Continue seed)
 
 maybeIO :: IO a -> IO (Maybe a)
-maybeIO act = catch (Just `liftM` act)
-                    (\e -> do
-                      let err = e :: SomeException
-                      return Nothing)
+maybeIO actOn = catch (Just `liftM` actOn)
+                      (\e -> do
+                        let err = e :: SomeException
+                        return Nothing)
 
 getInfo :: FilePath -> FilePath -> IO Info
 getInfo path name = do
