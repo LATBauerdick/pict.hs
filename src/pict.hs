@@ -69,15 +69,8 @@ copyIt sourcePath targetPath = copyFileWithMetadata sourcePath targetPath
 doAction :: (a -> IO b) -> [a] -> IO [b]
 doAction actOn js = do
   let doParallel f xs = map f xs `using` parList rseq
-  amfs <- insideoutIO $ doParallel actOn js
+  amfs <- sequence $ doParallel actOn js
   return amfs
-insideoutIO :: [IO a] -> IO [a]
-insideoutIO [] = do return []
-insideoutIO (x:xs) = do
-  x' <- x
-  xs' <- insideoutIO xs
-  return (x':xs')
-
 
 doItem :: FilePath -> FilePath -> (FilePath -> FilePath -> IO()) -> FilePath -> IO (Maybe FilePath)
 doItem baseSourcePath baseTargetPath doIt relativePath = do
