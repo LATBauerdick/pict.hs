@@ -1,0 +1,2 @@
+stack ghc -- -odir .out -hidir .out -o .out/pict -O2 -rtsopts -threaded src/main.hs src/pict.hs
+stack exec -- .out/pict -s +RTS -N2 -s
