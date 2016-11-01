@@ -30,12 +30,15 @@ processJpegs yr mo conv = do
                   then printf "%d/%d-%02d" (yr::Int) (yr::Int) (mo::Int)
                   else printf "%d" (yr::Int)
       sJpegsPath  = "/Users/bauerdic/Dropbox/Pictures/sJPEGs/"
-      jpegsPath   = "/Users/bauerdic/Media/JPEGs"
-      --jpegsPath   = printf "/mnt/P/O/P%d/" (yr::Int)
+--      jpegsPath   = "/Users/bauerdic/Media/JPEGs"
+      jpegsPath   = "/mnt/P/O/JPEGs/"
+      origPath   = printf "/mnt/P/O/P%d/" (yr::Int)
       source = if conv
-                  then sJpegsPath -- jpegsPath
-                  else sJpegsPath
-      target = "/Users/bauerdic/neu"
+                  then origPath -- jpegsPath
+                  else origPath
+      target = if conv
+                  then "/Users/bauerdic/neu" -- sJpegsPath
+                  else jpegsPath
       actOn :: FilePath -> IO (Maybe FilePath)
       actOn = if conv
                 then doItem source target convertIt

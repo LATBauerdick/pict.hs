@@ -9,10 +9,10 @@ main = getArgs >>= parse >>= process True
 
 parse ["-h"] = usage >> exit
 parse ["-v"] = version >> exit
-parse [] = return ["-s"] :: IO [String] -- default
+parse [] = return ["-c"] :: IO [String] -- default
 parse x = return x :: IO [String]
 
-usage = putStrLn "Usage: pict [-s | -c] [year] [month]"
+usage = putStrLn "Usage: pict [-p(rocess) | -c(opy)] [year] [month]"
 version = putStrLn "Haskell pict v. 0.1"
 exit = exitWith ExitSuccess
 
@@ -21,11 +21,11 @@ process conv args =
   case args of
     [] -> do
       Pict.processJpegs 2016 10 conv
-    "-s":rest -> do
-      putStrLn "will copy from small jpegs for range"
-      process False rest
     "-c":rest -> do
-      putStrLn "will convert to small jpegs"
+      putStrLn "will copy jpegs"
+      process False rest
+    "-p":rest -> do
+      putStrLn "will process / convert to small jpegs"
       process True rest
     [syr] -> do
       let yr = read syr
