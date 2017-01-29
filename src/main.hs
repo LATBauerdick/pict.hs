@@ -13,7 +13,7 @@ parse [] = return ["-c"] :: IO [String] -- default
 parse x = return x :: IO [String]
 
 usage = putStrLn "Usage: pict [-p(rocess) | -c(opy)] [year] [month]"
-version = putStrLn "Haskell pict v. 0.1"
+version = putStrLn "Haskell pict v. 1.0"
 exit = exitWith ExitSuccess
 
 process :: Bool -> [String] -> IO ()
