@@ -30,26 +30,27 @@ processJpegs yr mo conv = do
                   then printf "%d/%d-%02d" (yr::Int) (yr::Int) (mo::Int)
                   else printf "%d" (yr::Int)
       sJpegsPath  = "/Users/bauerdic/Dropbox/Pictures/sJPEGs/"
---      jpegsPath   = "/Users/bauerdic/Media/JPEGs"
-      jpegsPath   = "/mnt/P/O/JPEGs/"
-      origPath   = printf "/mnt/P/O/P%d/" (yr::Int)
+      jpegsPath   = "/mnt/P/O/JPEGs/" --"/Users/bauerdic/Media/JPEGs"
+      origPath    = printf "/mnt/P/O/P%d/" (yr::Int)
+      neuPath     = "/Users/bauerdic/neu"
       source = if conv
                   then origPath -- jpegsPath
                   else origPath
       target = if conv
-                  then "/Users/bauerdic/neu" -- sJpegsPath
+                  then sJpegsPath
                   else jpegsPath
       actOn :: FilePath -> IO (Maybe FilePath)
       actOn = if conv
                 then doItem source target convertIt
                 else doItem source target copyIt
-  putStrLn $ "copy from " ++ source ++ ">>>" ++ subPath
+  putStrLn $ "copy from " ++ source ++ subPath ++ ">>>" ++ target
   js <- getItems source subPath
   putStrLn (printf "Processing %d items." (length js))
   createDirectoryIfMissing True target
   copied <- doAction actOn js
   putStr "processed items:"
   print $ length $ filter isJust copied
+
 
 getItems :: FilePath -> FilePath -> IO [FilePath]
 getItems source subPath = do
