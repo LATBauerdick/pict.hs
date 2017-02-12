@@ -43,7 +43,7 @@ processJpegs yr mo conv = do
       actOn = if conv
                 then doItem source target convertIt
                 else doItem source target copyIt
-  putStrLn $ "copy from " ++ source ++ subPath ++ ">>>" ++ target
+  putStrLn $ "  from " ++ source ++ subPath ++ ">>>" ++ target
   js <- getItems source subPath
   putStrLn (printf "Processing %d items." (length js))
   createDirectoryIfMissing True target

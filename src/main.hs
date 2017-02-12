@@ -22,10 +22,10 @@ process conv args =
     [] -> do
       Pict.processJpegs 2016 10 conv
     "-c":rest -> do
-      putStrLn "will copy jpegs"
+      putStrLn "will *c*opy jpegs"
       process False rest
     "-p":rest -> do
-      putStrLn "will process / convert to small jpegs"
+      putStrLn "will *p*rocess using imagemagick convert to create small jpegs"
       process True rest
     [syr] -> do
       let yr = read syr
