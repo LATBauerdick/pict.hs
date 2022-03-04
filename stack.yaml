@@ -15,8 +15,8 @@
 # resolver:
 #  name: custom-snapshot
 #  location: "./custom-snapshot.yaml"
-nix:
-  enable: false
+# nix:
+#   enable: true
 resolver: lts-8.18
 
 # User packages to be built.

@@ -29,12 +29,16 @@ processJpegs yr mo conv = do
   let subPath = if mo > 0
                   then printf "%d/%d-%02d" (yr::Int) (yr::Int) (mo::Int)
                   else printf "%d" (yr::Int)
-      sJpegsPath  = "/Volumes/Users/bauerdic/Pictures/sJPEGs/"
-      jpegsPath   = "/Volumes/Users/bauerdic/Pictures/JPEGs/" --"/Users/bauerdic/Media/JPEGs"
-      origPath    = printf "/Volumes/Users/bauerdic/Pictures/POriginals/" --P%d/" (yr::Int)
-      neuPath     = "/Volumes/Users/Users/bauerdic/neu"
+      -- sJpegsPath  = "/data/sjpegs/"
+      -- sJpegsPath  = "/Volumes/Users/bauerdic/Pictures/sJPEGs/"
+      sJpegsPath  = "/media/sjpegs/"
+      -- jpegsPath   = "/Volumes/POriginals/JPEGs/JPEGs/" --"/home/bauerdic/Media/JPEGs"
+      -- jpegsPath   = "/Volumes/Users/bauerdic/Pictures/JPEGs/" --"/Users/bauerdic/Media/JPEGs"
+      jpegsPath   = "/media/jpegs/" --"/home/bauerdic/Media/JPEGs"
+      -- origPath    = printf "/Volumes/Users/bauerdic/Pictures/POriginals/" --P%d/" (yr::Int)
+      origPath    = printf "/Volumes/POriginals/P%d/" (yr::Int)
       source = if conv
-                  then origPath -- jpegsPath
+                  then jpegsPath
                   else origPath
       target = if conv
                   then sJpegsPath
