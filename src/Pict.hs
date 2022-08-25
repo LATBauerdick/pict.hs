@@ -31,12 +31,13 @@ processJpegs yr mo conv = do
                   else printf "%d" (yr::Int)
       -- sJpegsPath  = "/data/sjpegs/"
       -- sJpegsPath  = "/Volumes/Users/bauerdic/Pictures/sJPEGs/"
-      sJpegsPath  = "/media/sjpegs/"
+      sJpegsPath  = "/data/sjpegs/sJPEGs"
       -- jpegsPath   = "/Volumes/POriginals/JPEGs/JPEGs/" --"/home/bauerdic/Media/JPEGs"
       -- jpegsPath   = "/Volumes/Users/bauerdic/Pictures/JPEGs/" --"/Users/bauerdic/Media/JPEGs"
-      jpegsPath   = "/media/jpegs/" --"/home/bauerdic/Media/JPEGs"
+      jpegsPath   = "/data/jpegs/JPEGs" --"/home/bauerdic/Media/JPEGs"
       -- origPath    = printf "/Volumes/Users/bauerdic/Pictures/POriginals/" --P%d/" (yr::Int)
-      origPath    = printf "/Volumes/POriginals/P%d/" (yr::Int)
+      -- origPath    = printf "/Volumes/POriginals/P%d/" (yr::Int)
+      origPath    = printf "/media/pictures/P%d/" (yr::Int)
       source = if conv
                   then jpegsPath
                   else origPath
