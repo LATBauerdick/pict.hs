@@ -64,7 +64,7 @@ getItems source subPath = do
 
 convertIt :: FilePath -> FilePath -> IO ()
 convertIt sourcePath targetPath =  do
-  let cmd_conv = [  "convert", sourcePath
+  let cmd_conv = [  "magick", sourcePath
                   , "-resize", "2560x2048", "-quality" , "50"
                   , targetPath ]
       cmd:args = cmd_conv
