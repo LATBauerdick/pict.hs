@@ -31,10 +31,10 @@ processJpegs yr mo conv = do
                   else printf "%d" (yr::Int)
       -- sJpegsPath  = "/data/sjpegs/"
       -- sJpegsPath  = "/Volumes/Users/bauerdic/Pictures/sJPEGs/"
-      sJpegsPath  = "/data/sjpegs/sJPEGs"
+      sJpegsPath  = "/home/latb/Pictures/sJPEGs"
       -- jpegsPath   = "/Volumes/POriginals/JPEGs/JPEGs/" --"/home/bauerdic/Media/JPEGs"
       -- jpegsPath   = "/Volumes/Users/bauerdic/Pictures/JPEGs/" --"/Users/bauerdic/Media/JPEGs"
-      jpegsPath   = "/data/jpegs/JPEGs" --"/home/bauerdic/Media/JPEGs"
+      jpegsPath   = "/home/latb/Pictures/Jpegs/"--"/data/jpegs/JPEGs/" --"/home/bauerdic/Media/JPEGs"
       -- origPath    = printf "/Volumes/Users/bauerdic/Pictures/POriginals/" --P%d/" (yr::Int)
       -- origPath    = printf "/Volumes/POriginals/P%d/" (yr::Int)
       origPath    = printf "/media/pictures/P%d/" (yr::Int)
@@ -65,7 +65,7 @@ getItems source subPath = do
 convertIt :: FilePath -> FilePath -> IO ()
 convertIt sourcePath targetPath =  do
   let cmd_conv = [  "magick", sourcePath
-                  , "-resize", "2560x2048", "-quality" , "50"
+                  , "-resize", "2560x2048>", "-quality" , "50"
                   , targetPath ]
       cmd:args = cmd_conv
   rawSystem cmd args
